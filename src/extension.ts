@@ -3,15 +3,17 @@
 import * as vscode from 'vscode';
 const stylelint = require('stylelint');
 const fs = require('fs');
-
+let _terminal: vscode.Terminal | undefined;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context) {
 
 	const currentDocument = vscode.window.activeTextEditor?.document;
+    const root = vscode.workspace.workspaceFolders?.[0].uri.path;
     const stylelintConfigFile = '/Users/yangtianyuan/project/format-manager/config/.stylelintrc';
     const stylelintConfig = JSON.parse(fs.readFileSync(stylelintConfigFile, 'utf-8'));
+    _terminal = vscode.window.createTerminal({name: "yu-term", hideFromUser: true});
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
@@ -19,16 +21,8 @@ export function activate(context) {
 	let disposable = vscode.commands.registerCommand('format-manager.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
 		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from format-manager!');
         if (currentDocument) {
-            stylelint?.lint(
-                {
-                    config: stylelintConfig,
-                    files: currentDocument.fileName,
-                }
-            ).then((data) => {
-                console.log(data);
-            });
+            _terminal?.sendText(`npx stylelint ${currentDocument.fileName} --config ${stylelintConfigFile} --fix`);
         }
 	});
 
@@ -36,4 +30,6 @@ export function activate(context) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+    _terminal?.dispose();
+}
