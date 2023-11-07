@@ -3,33 +3,81 @@
 import * as vscode from 'vscode';
 const stylelint = require('stylelint');
 const fs = require('fs');
-let _terminal: vscode.Terminal | undefined;
+const cp = require('child_process');
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context) {
-
-	const currentDocument = vscode.window.activeTextEditor?.document;
-    const root = vscode.workspace.workspaceFolders?.[0].uri.path;
-    const stylelintConfigFile = '/Users/yangtianyuan/project/format-manager/config/.stylelintrc';
-    const stylelintConfig = JSON.parse(fs.readFileSync(stylelintConfigFile, 'utf-8'));
-    _terminal = vscode.window.createTerminal({name: "yu-term", hideFromUser: true});
-
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('format-manager.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-        if (currentDocument) {
-            _terminal?.sendText(`npx stylelint ${currentDocument.fileName} --config ${stylelintConfigFile} --fix`);
-        }
-	});
+    const channel = vscode.window.createOutputChannel('format-manager');
+	let formatWithStylelint = vscode.commands.registerCommand(
+		'format-manager.format-with-stylelint',
+		() => {
+            const currentDocument = vscode.window.activeTextEditor?.document;
+	        const root = vscode.workspace.workspaceFolders?.[0].uri.path;
+			const stylelintConfigFile = vscode.workspace
+				.getConfiguration()
+				.get('format-manager.stylelintConfigPath');
+			if (!stylelintConfigFile) {
+				vscode.window.showErrorMessage(
+					'Please set stylelint config file path in settings',
+				);
+				return;
+			}
 
-	context.subscriptions.push(disposable);
+			if (currentDocument) {
+				const cmd = `npx stylelint ${currentDocument.fileName} --config ${stylelintConfigFile} --fix`;
+				cp.exec(
+					cmd,
+					{ cwd: root || process.cwd() },
+					(err, stdout, stderr) => {
+						if (err) {
+                            channel.append('err: ' + err);
+							return;
+						}
+                        channel.append('stdout: ' + stdout);
+					},
+				);
+			}
+		},
+	);
+
+    let formatWithPrettier = vscode.commands.registerCommand(
+        'format-manager.format-with-prettier',
+        () => {
+            const currentDocument = vscode.window.activeTextEditor?.document;
+	        const root = vscode.workspace.workspaceFolders?.[0].uri.path;
+			const prettierConfigFile = vscode.workspace
+				.getConfiguration()
+				.get('format-manager.prettierConfigPath');
+			if (!prettierConfigFile) {
+				vscode.window.showErrorMessage(
+					'Please set prettier config file path in settings',
+				);
+				return;
+			}
+
+			if (currentDocument) {
+				const cmd = `prettier ${currentDocument.fileName} --config ${prettierConfigFile} --write`;
+				cp.exec(
+					cmd,
+					{ cwd: root || process.cwd() },
+					(err, stdout, stderr) => {
+						if (err) {
+                            channel.append('err: ' + err);
+							return;
+						}
+                        channel.append('format--' + currentDocument.fileName);
+					},
+				);
+			}
+		},
+    );
+
+	context.subscriptions.push(formatWithStylelint);
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {
-    _terminal?.dispose();
-}
+export function deactivate() {}
