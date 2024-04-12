@@ -24,6 +24,11 @@
 				"command": "format-manager.format-with-prettier",
 				"title": "使用 prettier 格式化",
 				"category": "Format Manager"
+			},
+			{
+				"command": "format-manager.check-with-eslint",
+				"title": "使用 eslint 格式化",
+				"category": "Format Manager"
 			}
 		],
 		"menus": {
@@ -46,6 +51,11 @@
 					"type": "string",
 					"default": "",
 					"description": "prettier config file path"
+				},
+				"format-manager.eslintConfigPath": {
+					"type": "string",
+					"default": "",
+					"description": "eslint config file path"
 				}
 			}
 		}
